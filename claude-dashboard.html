@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude 个人仪表盘</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+      background: #0f0f0f;
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 48px;
+    }
+
+    .header-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #d97757, #c96442);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: #555;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 20px 24px;
+    }
+
+    /* 模型卡片 */
+    .model-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .model-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .model-card:hover {
+      border-color: #444;
+      background: #202020;
+    }
+
+    .model-card.active {
+      border-color: #d97757;
+      background: #1f1510;
+    }
+
+    .model-card.active::before {
+      content: "当前使用";
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 10px;
+      background: #d97757;
+      color: #fff;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .model-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e8e8e8;
+      margin-bottom: 6px;
+    }
+
+    .model-card.active .model-name {
+      color: #d97757;
+    }
+
+    .model-desc {
+      font-size: 12px;
+      color: #666;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .model-speed {
+      display: flex;
+      gap: 4px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #333;
+    }
+
+    .dot.on { background: #d97757; }
+
+    .copy-btn {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 7px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: transparent;
+      color: #888;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .copy-btn:hover {
+      border-color: #d97757;
+      color: #d97757;
+    }
+
+    .copy-btn.copied {
+      border-color: #4caf50;
+      color: #4caf50;
+    }
+
+    /* 用户信息 */
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 12px 0;
+      border-bottom: 1px solid #222;
+    }
+
+    .info-row:last-child { border-bottom: none; }
+
+    .info-key {
+      font-size: 12px;
+      color: #666;
+      flex-shrink: 0;
+      width: 100px;
+    }
+
+    .info-val {
+      font-size: 13px;
+      color: #ccc;
+      text-align: right;
+      line-height: 1.6;
+    }
+
+    /* 标签 */
+    .tags-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .tag.identity  { background: #1a2535; color: #6ba3d6; border: 1px solid #1e3050; }
+    .tag.skill     { background: #1a2a1a; color: #72b472; border: 1px solid #1e381e; }
+    .tag.habit     { background: #2a1a2a; color: #b47ab4; border: 1px solid #3a1e3a; }
+    .tag.trait     { background: #2a2010; color: #c8a456; border: 1px solid #3a2e14; }
+
+    .tag-legend {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #555;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* 更新时间 */
+    .update-time {
+      text-align: right;
+      font-size: 11px;
+      color: #444;
+      margin-top: 12px;
+    }
+
+    /* 注意提示 */
+    .notice {
+      background: #1a1a10;
+      border: 1px solid #333318;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: #888;
+      line-height: 1.7;
+      margin-top: 12px;
+    }
+
+    .notice strong { color: #c8a456; }
+
+    @media (max-width: 600px) {
+      .model-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <div class="header-icon">✦</div>
+      <div>
+        <h1>Claude 个人仪表盘</h1>
+        <p>你与 Claude 的专属面板</p>
+      </div>
+    </div>
+
+    <!-- 模型选择 -->
+    <div class="section">
+      <div class="section-label">当前模型 / 切换</div>
+      <div class="model-grid">
+
+        <div class="model-card">
+          <div class="model-name">Haiku 4.5</div>
+          <div class="model-desc">最快速，适合简单问答、翻译、整理等轻量任务</div>
+          <div class="model-speed">
+            <div class="dot on"></div><div class="dot on"></div><div class="dot on"></div>
+            <div class="dot"></div><div class="dot"></div>
+          </div>
+          <button class="copy-btn" onclick="copyCmd(this, 'claude-haiku-4-5-20251001')">复制切换命令</button>
+        </div>
+
+        <div class="model-card active">
+          <div class="model-name">Sonnet 4.6</div>
+          <div class="model-desc">均衡首选，速度与能力兼顾，适合日常大多数任务</div>
+          <div class="model-speed">
+            <div class="dot on"></div><div class="dot on"></div><div class="dot on"></div>
+            <div class="dot on"></div><div class="dot"></div>
+          </div>
+          <button class="copy-btn" onclick="copyCmd(this, 'claude-sonnet-4-6')">复制切换命令</button>
+        </div>
+
+        <div class="model-card">
+          <div class="model-name">Opus 4.6</div>
+          <div class="model-desc">最强大，适合复杂推理、代码、深度分析，速度较慢</div>
+          <div class="model-speed">
+            <div class="dot on"></div><div class="dot on"></div><div class="dot on"></div>
+            <div class="dot on"></div><div class="dot on"></div>
+          </div>
+          <button class="copy-btn" onclick="copyCmd(this, 'claude-opus-4-6')">复制切换命令</button>
+        </div>
+
+      </div>
+      <div class="notice">
+        <strong>如何切换模型：</strong>点击上方「复制切换命令」，然后在 Claude Code 对话框里粘贴并发送即可。命令格式是 <code>/model 模型名称</code>。
+      </div>
+    </div>
+
+    <!-- 用户基本信息 -->
+    <div class="section">
+      <div class="section-label">Claude 对你的了解</div>
+      <div class="card">
+        <div class="info-row">
+          <div class="info-key">职业</div>
+          <div class="info-val">设计师</div>
+        </div>
+        <div class="info-row">
+          <div class="info-key">母语</div>
+          <div class="info-val">中文</div>
+        </div>
+        <div class="info-row">
+          <div class="info-key">英语能力</div>
+          <div class="info-val">较弱，尽量避免英文内容</div>
+        </div>
+        <div class="info-row">
+          <div class="info-key">技术背景</div>
+          <div class="info-val">非程序员，需要大白话解释代码和技术</div>
+        </div>
+        <div class="info-row">
+          <div class="info-key">沟通偏好</div>
+          <div class="info-val">步骤清晰、配图说明、不堆砌术语</div>
+        </div>
+        <div class="info-row">
+          <div class="info-key">使用倾向</div>
+          <div class="info-val">注重效率，喜欢直观的视觉呈现</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 用户标签 -->
+    <div class="section">
+      <div class="section-label">你的标签（客观，随对话更新）</div>
+
+      <div class="tag-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#6ba3d6"></div>身份</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#72b472"></div>能力</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#b47ab4"></div>习惯</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c8a456"></div>性格特质</div>
+      </div>
+
+      <div class="tags-wrap">
+        <span class="tag identity">中国人</span>
+        <span class="tag identity">设计师</span>
+        <span class="tag skill">视觉思维</span>
+        <span class="tag skill">英语弱</span>
+        <span class="tag skill">非技术背景</span>
+        <span class="tag habit">偏好中文交流</span>
+        <span class="tag habit">喜欢直观呈现</span>
+        <span class="tag trait">主动探索工具边界</span>
+        <span class="tag trait">注重效率</span>
+        <span class="tag trait">有明确需求意识</span>
+      </div>
+
+      <div class="update-time">最后更新：2026年04月04日</div>
+    </div>
+
+  </div>
+
+  <script>
+    function copyCmd(btn, model) {
+      const cmd = `/model ${model}`;
+      navigator.clipboard.writeText(cmd).then(() => {
+        const original = btn.textContent;
+        btn.textContent = '✓ 已复制！';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
